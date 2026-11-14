@@ -129,3 +129,56 @@ class Dealer:
         )
 
         return result.modified_count > 0
+
+    
+    @staticmethod
+    def reset_password(dealer_id: str, new_password: str):
+        if not new_password or len(new_password) < 12:
+            raise ValueError(
+                "Password must be at least 12 characters."
+            )
+
+        result = get_db().dealers.update_one(
+            {"_id": ObjectId(dealer_id)},
+            {
+                "$set": {
+                    "password_hash": hash_password(new_password),
+                    "must_change_password": True,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            }
+        )
+
+        return result.matched_count > 0
+
+    
+    @staticmethod
+    def change_password(dealer_id: str, current_password: str, new_password: str):
+        if not current_password or not new_password:
+            raise ValueError("Current and new passwords are required.")
+
+        if len(new_password) < 12:
+            raise ValueError("New password must be at least 12 characters.")
+
+        dealer = Dealer.get_by_id(dealer_id)
+
+        if not dealer:
+            return False
+
+        if not verify_password(dealer.get("password_hash"), current_password):
+            raise ValueError("Current password is incorrect.")
+
+        result = get_db().dealers.update_one(
+            {"_id": ObjectId(dealer_id)},
+            {
+                "$set": {
+                    "password_hash": hash_password(new_password),
+                    "must_change_password": False,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            }
+        )
+
+        return result.matched_count > 0
+    
+    

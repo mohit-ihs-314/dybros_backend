@@ -111,3 +111,109 @@ def update_dealer_status(dealer_id):
             "success": False,
             "message": str(error)
         }), 400
+
+
+@dealers_bp.route("/<dealer_id>", methods=["PATCH"])
+@admin_required
+def update_dealer(dealer_id):
+    if not ObjectId.is_valid(dealer_id):
+        return jsonify({
+            "success": False,
+            "message": "Invalid dealer ID."
+        }), 400
+
+    data = request.get_json(silent=True) or {}
+
+    allowed_fields = [
+        "business_name",
+        "contact_name",
+        "phone",
+        "email",
+        "gst_number",
+        "address"
+    ]
+
+    updates = {}
+
+    for field in allowed_fields:
+        if field in data:
+            value = data[field]
+
+            if not isinstance(value, str):
+                return jsonify({
+                    "success": False,
+                    "message": f"Invalid value for {field}."
+                }), 400
+
+            updates[field] = value.strip()
+
+    if not updates:
+        return jsonify({
+            "success": False,
+            "message": "No valid fields provided for update."
+        }), 400
+
+    for field in ["business_name", "contact_name", "phone"]:
+        if field in updates and not updates[field]:
+            return jsonify({
+                "success": False,
+                "message": f"{field} cannot be empty."
+            }), 400
+
+    result = get_db().dealers.update_one(
+        {"_id": ObjectId(dealer_id)},
+        {"$set": updates}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({
+            "success": False,
+            "message": "Dealer not found."
+        }), 404
+
+    return jsonify({
+        "success": True,
+        "message": "Dealer details updated successfully."
+    }), 200
+
+
+@dealers_bp.route("/<dealer_id>/reset-password", methods=["PATCH"])
+@admin_required
+def reset_dealer_password(dealer_id):
+    if not ObjectId.is_valid(dealer_id):
+        return jsonify({
+            "success": False,
+            "message": "Invalid dealer ID."
+        }), 400
+
+    data = request.get_json(silent=True) or {}
+    new_password = data.get("password")
+
+    if not new_password:
+        return jsonify({
+            "success": False,
+            "message": "New password is required."
+        }), 400
+
+    try:
+        updated = Dealer.reset_password(
+            dealer_id,
+            new_password
+        )
+
+        if not updated:
+            return jsonify({
+                "success": False,
+                "message": "Dealer not found."
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "message": "Dealer password reset successfully. Password change is required on next login."
+        }), 200
+
+    except ValueError as error:
+        return jsonify({
+            "success": False,
+            "message": str(error)
+        }), 400

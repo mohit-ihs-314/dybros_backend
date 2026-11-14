@@ -112,6 +112,11 @@ class Order:
             "status": "Awaiting Confirmation",
             "payment_status": "Pending",
 
+            # Payment tracking
+            "amount_paid": 0.0,
+            "outstanding_amount": total,
+            "payments": [],
+
             "created_at": now,
             "updated_at": now
         }

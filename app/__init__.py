@@ -11,6 +11,7 @@ from app.routes.auth import auth_bp
 from app.routes.products import products_bp
 from app.routes.orders import orders_bp
 from app.routes.dealers import dealers_bp
+from app.routes.invoices import invoices_bp
 
 
 def create_app():
@@ -58,5 +59,7 @@ def create_app():
     app.register_blueprint(orders_bp)
 
     app.register_blueprint(dealers_bp)
+
+    app.register_blueprint(invoices_bp)
 
     return app
